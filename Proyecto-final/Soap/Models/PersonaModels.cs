@@ -2,7 +2,7 @@ using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using System.Collections.Generic;
 
-namespace Soap.Contracts.Dtos;
+namespace Soap.Models;
 public class Stats
 {
     [BsonElement("St")]
@@ -21,7 +21,7 @@ public class Stats
     public int Lu { get; set; }
 }
 
-public class PersonaCreateRequestDto
+public class PersonaModel
 {
     [BsonElement("arcana")]
     public string Arcana { get; set; }

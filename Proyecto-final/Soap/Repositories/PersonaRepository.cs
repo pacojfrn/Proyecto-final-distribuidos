@@ -1,27 +1,41 @@
-using System;
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
-using Soap.Contracts;
-using Contracts.Dtos;
-using Soap.Models;
-using Soap.Repositories;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Query;
+using SoapApi.Infrastructure;
+using SoapApi.Mappers;
+using SoapApi.Models;
 
-namespace Soap.Contracts.Services
-{
-    public class PersonaService : IPersonaContract
-    {
-        private readonly IPersonaRepository _personaRepository;
+namespace Soap.Repositories;
 
-        public PersonaService(IPersonaRepository personaRepository)
+public class PersonaRespository : IPersonaRepository{
+
+    private readonly IMongoCollection<GroupEntity> _personasCollection;
+    public GroupRepository(IMongoClient mongoClient, IConfiguration configuration){
+        var database = mongoClient.GetDatabase(configuration.GetValue<string>("MongoDb:Groups:DatabaseName"));
+        _groups = database.GetCollection<GroupEntity>(configuration.GetValue<string>("MongoDb:Groups:CollectionName"));
+    }
+
+    public async Task<IList<PersonaResponseDto>> GetAll(int page, int limit, CancellationToken cancellationToken)
         {
-            _personaRepository = personaRepository;
-        }
+            var personas = await _personasCollection.Find(persona => true).Skip((page - 1) * limit).Limit(limit).ToListAsync(cancellationToken);
+            var totalPersonas = await _personasCollection.CountDocumentsAsync(persona => true, cancellationToken: cancellationToken);
+            var totalPages = (int)Math.Ceiling((double)totalPersonas / limit);
 
-        public async Task<IList<PersonaResponseDto>> GetAll(int page, int limit, CancellationToken cancellationToken)
-        {
-            var personas = await _personaRepository.GetAll(page,limit,cancellationToken);
-            return personas.Select(persona => persona.ToDto()).ToList();
+            var result = new
+            {
+                totalPersonas,
+                totalPages,
+                currentPage = page,
+                personas
+            };
+
+            // Guardar en caché (30 segundos)
+                await _cache.SetStringAsync(cacheKey, System.Text.Json.JsonSerializer.Serialize(result), new DistributedCacheEntryOptions
+                {
+                    AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(30)
+                });
+
+                return Ok(result);
+            }
         }
 
         public async Task<PersonaResponseDto> GetByName(string name, CancellationToken cancellationToken)
@@ -89,5 +103,4 @@ namespace Soap.Contracts.Services
             await _personaRepository.DeleteByIdAsync(persona, cancellationToken);
             return true;
         }
-    }
 }
