@@ -1,6 +1,6 @@
-using Soap.Dtos;
+using Soap.Contracts.Dtos;
 using Soap.Models;
-using Soap.Infrastructure.Entities;
+using Soap.Infrastructure.Entity;
 using System.Collections.Generic;
 
 namespace Soap.Mappers
@@ -40,14 +40,14 @@ namespace Soap.Mappers
                 Weak = persona.Weak,
                 Strength = persona.Strength,
                 Level = persona.Level,
-                Stats = persona.Stats != null ? persona.Stats.ConvertAll(s => new StatsDto
+                Stats = persona.Stats != null ? persona.Stats.ConvertAll(s => new Stats
                 {
                     St = s.St,
                     Ma = s.Ma,
                     En = s.En,
                     Ag = s.Ag,
                     Lu = s.Lu
-                }) : new List<StatsDto>()
+                }) : new List<Stats>()
             };
         }
 
@@ -57,14 +57,34 @@ namespace Soap.Mappers
             {
                 Arcana = persona.Arcana,
                 Weak = new List<string>(persona.Weak),
-                Stats = persona.Stats != null ? persona.Stats.ConvertAll(s => new StatsEntity
+                Stats = persona.Stats != null ? persona.Stats.ConvertAll(s => new Stats
                 {
                     St = s.St,
                     Ma = s.Ma,
                     En = s.En,
                     Ag = s.Ag,
                     Lu = s.Lu
-                }) : new List<StatsEntity>(),
+                }) : new List<Stats>(),
+                Strength = new List<string>(persona.Strength),
+                Level = persona.Level,
+                Name = persona.Name
+            };
+        }
+
+        public static PersonaEntity ToEntity(this PersonaCreateRequestDto persona)
+        {
+            return new PersonaEntity
+            {
+                Arcana = persona.Arcana,
+                Weak = new List<string>(persona.Weak),
+                Stats = persona.Stats != null ? persona.Stats.ConvertAll(s => new Stats
+                {
+                    St = s.St,
+                    Ma = s.Ma,
+                    En = s.En,
+                    Ag = s.Ag,
+                    Lu = s.Lu
+                }) : new List<Stats>(),
                 Strength = new List<string>(persona.Strength),
                 Level = persona.Level,
                 Name = persona.Name
@@ -90,6 +110,7 @@ namespace Soap.Mappers
                 Name = persona.Name
             };
         }
+        
 
         public static PersonaModel ToModel(this PersonaUpdateDto persona)
         {

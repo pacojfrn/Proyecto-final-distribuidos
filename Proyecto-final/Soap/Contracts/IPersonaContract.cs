@@ -1,6 +1,6 @@
-using SoapApi.Models;
+using Soap.Contracts.Dtos;
 
-namespace Soap.Contracts
+namespace Soap.Contracts;
 public interface IPersonaContract
 {
     Task<PersonaResponseDto> GetById (string Id, CancellationToken cancellationToken);

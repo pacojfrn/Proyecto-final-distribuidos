@@ -1,25 +1,10 @@
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using System.Collections.Generic;
+using Soap.Infrastructure.Entity;
+
 
 namespace Soap.Contracts.Dtos;
-public class Stats
-{
-    [BsonElement("St")]
-    public int St { get; set; }
-
-    [BsonElement("Ma")]
-    public int Ma { get; set; }
-
-    [BsonElement("En")]
-    public int En { get; set; }
-
-    [BsonElement("Ag")]
-    public int Ag { get; set; }
-
-    [BsonElement("Lu")]
-    public int Lu { get; set; }
-}
 
 public class PersonaUpdateDto
 {

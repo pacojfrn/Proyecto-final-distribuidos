@@ -2,7 +2,7 @@ using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using System.Collections.Generic;
 
-namespace Soap.Infraestructure.Entities;
+namespace Soap.Infrastructure.Entity;
 public class Stats
 {
     [BsonElement("St")]
