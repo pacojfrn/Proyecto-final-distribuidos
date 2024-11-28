@@ -1,20 +1,17 @@
 using MongoDB.Driver;
-using Soap.Contracts;
 using Soap.Repositories;
-using Soap.Contracts.Services;
+using Soap.Services;
+using Soap.Contracts;
 using SoapCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddSoapCore();
-builder.Services.AddScoped<IPersonaRepository, PersonaRespository>();
-builder.Services.AddScoped<IPersonaContract, PersonaService>();
+builder.Services.AddSingleton<IMongoClient, MongoClient>(s => new MongoClient(builder.Configuration.GetValue<string>("MongoDb:Persona:ConnectionString")));
 
-
-builder.Services.AddSingleton<IMongoClient, MongoClient>(s => new MongoClient(builder.Configuration.GetValue<string>("MongoDb:Groups:ConnectionString")));
+builder.Services.AddScoped<IPerRepository, PerRepository>();
+builder.Services.AddScoped<IPerContract, PerService>();
 
 var app = builder.Build();
-app.UseSoapEndpoint<IPersonaContract>("/PersonaService.svc", new SoapEncoderOptions());
-
+app.UseSoapEndpoint<IPerContract>("/PerService.svc", new SoapEncoderOptions());
 
 app.Run();
