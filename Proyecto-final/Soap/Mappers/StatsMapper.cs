@@ -1,5 +1,6 @@
 using Soap.Infrastructure.Entities;
 using Soap.Models;
+using Soap.Contracts;
 
 namespace Soap.Mappers
 {

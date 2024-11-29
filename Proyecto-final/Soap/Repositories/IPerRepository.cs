@@ -9,5 +9,6 @@ namespace Soap.Repositories
         Task<PerEntity> GetByIdAsync(string id, CancellationToken cancellationToken);
         Task<PerEntity> GetByNameAsync(string name, CancellationToken cancellationToken);
         Task<bool> DeleteByIdAsync(string id, CancellationToken cancellationToken);
+        Task<PerEntity> CreatePersonaAsync(PerEntity persona, CancellationToken cancellationToken);
     }
 }

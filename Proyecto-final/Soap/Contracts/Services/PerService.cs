@@ -49,4 +49,12 @@ public class PerService : IPerContract{
         }
         throw new FaultException("Persona not found");
     }
+    public async Task<PerResponseDto> CreatePersona(PerResponseDto persona, CancellationToken cancellationToken){
+        var createdPer = persona.toEntity(); 
+        var result = await _perRepository.CreatePersonaAsync(createdPer, cancellationToken);
+        if (result is not null){
+            return result.ToDto();
+        }
+        throw new FaultException("Persona not created");
+    }
 }

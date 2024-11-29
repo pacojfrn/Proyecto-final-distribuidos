@@ -21,7 +21,7 @@ namespace Soap.Repositories
 
         public async Task<IList<PerEntity>> GetByArcanaAsync(string arcana, CancellationToken cancellationToken)
         {
-            return await _personas.Find(p => p.Arcana == arcana).ToListAsync(cancellationToken);
+            return await _personas.Find(p => p.arcana == arcana).ToListAsync(cancellationToken);
         }
 
         public async Task<PerEntity> GetByIdAsync(string id, CancellationToken cancellationToken)
@@ -31,12 +31,12 @@ namespace Soap.Repositories
                 throw new ArgumentException("Invalid ID format", nameof(id));
             }
 
-            return await _personas.Find(p => p.Id == objectId).FirstOrDefaultAsync(cancellationToken);
+            return await _personas.Find(p => p.id == objectId).FirstOrDefaultAsync(cancellationToken);
         }
 
         public async Task<PerEntity> GetByNameAsync(string name, CancellationToken cancellationToken)
         {
-            return await _personas.Find(p => p.Name == name).FirstOrDefaultAsync(cancellationToken);
+            return await _personas.Find(p => p.name == name).FirstOrDefaultAsync(cancellationToken);
         }
 
         public async Task<bool> DeleteByIdAsync(string id, CancellationToken cancellationToken)
@@ -46,8 +46,13 @@ namespace Soap.Repositories
                 throw new ArgumentException("Invalid ID format", nameof(id));
             }
 
-            var result = await _personas.DeleteOneAsync(p => p.Id == objectId, cancellationToken);
+            var result = await _personas.DeleteOneAsync(p => p.id == objectId, cancellationToken);
             return result.DeletedCount > 0;
+        }
+
+        public async Task<PerEntity> CreatePersonaAsync(PerEntity persona, CancellationToken cancellationToken){
+            await _personas.InsertOneAsync(persona, new InsertOneOptions(), cancellationToken);
+            return persona;
         }
     }
 }

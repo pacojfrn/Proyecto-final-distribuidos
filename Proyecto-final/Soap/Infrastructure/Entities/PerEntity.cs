@@ -8,42 +8,42 @@ namespace Soap.Infrastructure.Entities
     {
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
-        public ObjectId Id { get; set; }
+        public ObjectId id { get; set; }
 
         [BsonElement("arcana")]
-        public string Arcana { get; set; }
+        public string arcana { get; set; }
 
         [BsonElement("level")]
-        public int Level { get; set; }
+        public int level { get; set; }
 
         [BsonElement("name")]
-        public string Name { get; set; }
+        public string name { get; set; }
 
         [BsonElement("stats")]
-        public Stats Stats { get; set; }
+        public Stats stats { get; set; }
 
         [BsonElement("strength")]
-        public List<string> Strength { get; set; }
+        public List<string> strength { get; set; }
 
         [BsonElement("weak")]
-        public List<string> Weak { get; set; }
+        public List<string> weak { get; set; }
     }
 
     public class Stats
     {
-        [BsonElement("st")]
+        [BsonElement("St")]
         public int St { get; set; }
 
-        [BsonElement("ma")]
+        [BsonElement("Ma")]
         public int Ma { get; set; }
 
-        [BsonElement("en")]
+        [BsonElement("En")]
         public int En { get; set; }
 
-        [BsonElement("ag")]
+        [BsonElement("Ag")]
         public int Ag { get; set; }
 
-        [BsonElement("lu")]
+        [BsonElement("Lu")]
         public int Lu { get; set; }
     }
 }

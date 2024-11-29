@@ -16,4 +16,6 @@ public interface IPerContract{
     public Task<bool> DeleteById(string id, CancellationToken cancellationToken);
     [OperationContract]
     public Task<IList<PerResponseDto>> GetByArcana(string arcana, CancellationToken cancellationToken);
+    [OperationContract]
+    public Task<PerResponseDto> CreatePersona(PerResponseDto persona, CancellationToken cancellationToken);
 }
