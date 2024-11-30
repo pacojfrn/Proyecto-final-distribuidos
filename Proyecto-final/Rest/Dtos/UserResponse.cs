@@ -5,5 +5,5 @@ public class UserResponse{
 
     public required string? Name { get; set; } = null;
 
-    public required List<string>? Persona { get; set; } = null;
+    public required string Persona { get; set; } = null;
 }

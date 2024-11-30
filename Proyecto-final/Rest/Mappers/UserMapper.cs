@@ -40,4 +40,12 @@ public static class UserMapper{
             Persona = request.Persona
         };
     }
+
+    public static UserResponse ToDto(this UserPerModel userModel){
+        return new UserResponse{
+            Id = userModel.Id,
+            Name = userModel.Name,
+            Persona = userModel.Persona
+        };
+    }
 }

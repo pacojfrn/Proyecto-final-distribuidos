@@ -4,7 +4,8 @@ using Rest.Dtos;
 using Rest.Mappers;
 using Rest.Services;
 using Rest.Cache;
-using Rest.Infraestructure;
+using Rest.Models;
+using Rest.Infraestructure.Entities;
 using Newtonsoft.Json;
 
 namespace Rest.Controllers;
@@ -24,11 +25,11 @@ public class UserController : ControllerBase{
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<UserResponse>> GetUserById(int id, CancellationToken cancellationToken){
+    public async Task<ActionResult<UserPerModel>> GetUserById(int id, CancellationToken cancellationToken){
         string cacheKey = $"User:{id}";
         var cachedUser = await _cacheService.GetCacheValueAsync(cacheKey);
         if(cachedUser != null){
-            return Ok(JsonConvert.DeserializeObject<UserResponse>(cachedUser));
+            return Ok(JsonConvert.DeserializeObject<UserPerModel>(cachedUser));
         }
 
         var user = await _userService.GetUserByIdAsync(id, cancellationToken);
@@ -44,7 +45,7 @@ public class UserController : ControllerBase{
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<IEnumerable<UserResponse>>> GetUserByName(
+    public async Task<ActionResult<IEnumerable<UserPerModel>>> GetUserByName(
         CancellationToken cancellationToken,
         [FromQuery] string name, 
         [FromQuery] int pageIndex = 1,
@@ -54,12 +55,12 @@ public class UserController : ControllerBase{
             var cachedUsers = await _cacheService.GetCacheValueAsync(cacheKey);
 
             if(cachedUsers != null){
-                return Ok(JsonConvert.DeserializeObject<List<UserResponse>>(cachedUsers));
+                return Ok(JsonConvert.DeserializeObject<List<UserPerModel>>(cachedUsers));
             }
 
             var users = await _userService.GetUserByNameAsync(name, pageIndex, pageSize, orderBy, cancellationToken);
             if(users == null || !users.Any()){
-                return Ok(new List<UserResponse>());
+                return Ok(new List<UserPerModel>());
             }
             var userDto = users.Select(user => user.ToDto()).ToList();
             await _cacheService.SetCacheValueAsync(cacheKey, JsonConvert.SerializeObject(userDto), TimeSpan.FromMinutes(5));
@@ -83,7 +84,7 @@ public class UserController : ControllerBase{
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<UserResponse>> CreateUser([FromBody] CreateUserRequest userRequest, CancellationToken cancellationToken){
+    public async Task<ActionResult<UserPerModel>> CreateUser([FromBody] CreateUserRequest userRequest, CancellationToken cancellationToken){
         try{
             var user = await _userService.CreateUserAsync(userRequest.Name, userRequest.Persona, cancellationToken);
             return CreatedAtAction(nameof(GetUserById), new { id = user.Id}, user.ToDto());

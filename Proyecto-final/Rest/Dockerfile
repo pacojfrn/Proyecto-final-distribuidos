@@ -32,4 +32,4 @@ WORKDIR /app
 COPY --from=publish /app/publish .
 
 # Usar wait-for-it.sh para esperar a PostgreSQL antes de iniciar la aplicación
-CMD ["./wait-for-it.sh", "postgres:5432", "--", "dotnet", "Rest.dll"]
+CMD ["./wait-for-it.sh", "localhost:5432", "--", "dotnet", "Rest.dll"]

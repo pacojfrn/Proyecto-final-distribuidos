@@ -15,7 +15,7 @@ public class ApplicationDbContext : DbContext
     {
         if (!optionsBuilder.IsConfigured)
         {
-            optionsBuilder.UseNpgsql("Host=db;Port=5432;Database=restapidb;Username=postgres;Password=yourpassword");
+            optionsBuilder.UseNpgsql("Host=postgresdb;Port=5432;Database=restapidb;Username=postgres;Password=yourpassword");
         }
     }
 

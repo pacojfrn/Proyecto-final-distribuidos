@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: users-api
-          image: localhost:4000/users-api:1
+          image: localhost:5000/users-api:1
           env:
           - name: "UserServiceEndpoint"
             value: "http://users-api-svc.JFAA-api.svc-cluster.local:8080"

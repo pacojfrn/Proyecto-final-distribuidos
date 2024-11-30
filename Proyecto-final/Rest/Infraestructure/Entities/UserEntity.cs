@@ -6,5 +6,5 @@ public class UserEntity{
 
     public string? Name { get; set; }
 
-    public List<string>? Persona { get; set; }
+    public string? Persona { get; set; }
 }

@@ -15,7 +15,7 @@ namespace Rest.Repositories
             _dbcontext = dbContext;
         }
 
-        public async Task<UserModel> CreateAsync(string name, List<string> persona, CancellationToken cancellationToken)
+        public async Task<UserModel> CreateAsync(string name, string persona, CancellationToken cancellationToken)
         {
             var userEntity = new UserEntity
             {
@@ -46,7 +46,7 @@ namespace Rest.Repositories
             return user.ToModel();
         }
 
-        public async Task UpdateUserAsync(int id, string name, List<string> persona, CancellationToken cancellationToken)
+        public async Task UpdateUserAsync(int id, string name, string persona, CancellationToken cancellationToken)
         {
             var user = await _dbcontext.Users.FindAsync(new object[] { id }, cancellationToken);
 
