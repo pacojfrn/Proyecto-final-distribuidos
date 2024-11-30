@@ -20,7 +20,7 @@ namespace Soap.Mappers
                 name = persona.name,
                 arcana = persona.arcana,
                 level = persona.level,
-                stats = persona.stats?.ToModel(),  // Convertir de Stats de Entity a Stats de Model
+                stats = persona.stats.ToModel(),  // Convertir de Stats de Entity a Stats de Model
                 strength = persona.strength,
                 weak = persona.weak
             };
@@ -34,7 +34,7 @@ namespace Soap.Mappers
                 name = persona.name,
                 arcana = persona.arcana,
                 level = persona.level,
-                stats = persona.stats?.ToDto(),  // Stats ya es del tipo correcto
+                stats = persona.stats.ToDto(),  // Stats ya es del tipo correcto
                 strength = persona.strength,
                 weak = persona.weak
             };
@@ -47,7 +47,7 @@ namespace Soap.Mappers
                 name = persona.name,
                 arcana = persona.arcana,
                 level = persona.level,
-                stats = persona.stats?.ToDto(),
+                stats = persona.stats.ToDto(),
                 strength = persona.strength,
                 weak = persona.weak
             };
