@@ -6,13 +6,19 @@ using Rest.Services;
 using Rest.Cache;
 using StackExchange.Redis;
 using MongoDB.Driver;
+using Microsoft.Extensions.Logging;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Configurar el puerto en el que la aplicación escuchará
 builder.WebHost.UseUrls("http://*:4000");
 
-// El resto de la configuración se mantiene igual
+// Configurar logging
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+builder.Logging.AddDebug();
+
+// Configuración de servicios
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -44,4 +50,5 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     db.Database.EnsureCreated();
 }
+
 app.Run();

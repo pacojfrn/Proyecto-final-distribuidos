@@ -7,38 +7,46 @@ using Rest.Cache;
 using Rest.Models;
 using Rest.Infraestructure.Entities;
 using Newtonsoft.Json;
+using Microsoft.Extensions.Logging;
 
 namespace Rest.Controllers;
 
 [ApiController]
 [Route("[controller]")]
-public class UserController : ControllerBase{
+public class UserController : ControllerBase
+{
     private readonly IUserService _userService;
     private readonly IRedisCacheService _cacheService;
+    private readonly ILogger<UserController> _logger;
 
-    public UserController(IUserService userService, IRedisCacheService cacheService){
-        _userService = userService;
-        _cacheService = cacheService;
+    public UserController(IUserService userService, IRedisCacheService cacheService, ILogger<UserController> logger)
+    {
+        _userService = userService ?? throw new ArgumentNullException(nameof(userService));
+        _cacheService = cacheService ?? throw new ArgumentNullException(nameof(cacheService));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     [HttpGet("GetById/{id}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<UserPerModel>> GetUserById(int id, CancellationToken cancellationToken){
-        string cacheKey = $"User:{id}";
-        var cachedUser = await _cacheService.GetCacheValueAsync(cacheKey);
-        if(cachedUser != null){
-            return Ok(JsonConvert.DeserializeObject<UserPerModel>(cachedUser));
+    public async Task<ActionResult<UserPerModel>> GetUserById(int id, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var user = await _userService.GetUserByIdAsync(id, cancellationToken);
+            if (user is null)
+            {
+                _logger.LogWarning("Usuario con ID {UserId} no encontrado.", id);
+                return NotFound($"Usuario con ID {id} no encontrado.");
+            }
+            return Ok(user.ToDto());
         }
-
-        var user = await _userService.GetUserByIdAsync(id, cancellationToken);
-        if (user is null){
-            return NotFound();
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener el usuario por ID.");
+            return StatusCode((int)HttpStatusCode.InternalServerError, "An error occurred while retrieving the user.");
         }
-        var userDto = user.ToDto();
-        await _cacheService.SetCacheValueAsync(cacheKey, JsonConvert.SerializeObject(userDto), TimeSpan.FromMinutes(5));
-        return Ok(userDto);
     }
 
     [HttpGet("GetByName")]
@@ -50,33 +58,46 @@ public class UserController : ControllerBase{
         [FromQuery] string name, 
         [FromQuery] int pageIndex = 1,
         [FromQuery] int pageSize = 10,
-        [FromQuery] string orderBy = "name"){
-            string cacheKey = $"Users:{name}:{pageIndex}:{pageSize}:{orderBy}";
-            var cachedUsers = await _cacheService.GetCacheValueAsync(cacheKey);
-
-            if(cachedUsers != null){
-                return Ok(JsonConvert.DeserializeObject<List<UserPerModel>>(cachedUsers));
-            }
-
+        [FromQuery] string orderBy = "name")
+    {
+        try
+        {
             var users = await _userService.GetUserByNameAsync(name, pageIndex, pageSize, orderBy, cancellationToken);
-            if(users == null || !users.Any()){
+            if (users == null || !users.Any())
+            {
+                _logger.LogWarning("Usuarios con nombre {Name} no encontrados.", name);
                 return Ok(new List<UserPerModel>());
             }
-            var userDto = users.Select(user => user.ToDto()).ToList();
-            await _cacheService.SetCacheValueAsync(cacheKey, JsonConvert.SerializeObject(userDto), TimeSpan.FromMinutes(5));
-            return Ok(userDto);
+            return Ok(users.Select(user => user.ToDto()).ToList());
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener usuarios por nombre.");
+            return StatusCode((int)HttpStatusCode.InternalServerError, "An error occurred while retrieving users.");
+        }
     }
 
-    [HttpDelete("DeleteById{id}")]
+    [HttpDelete("DeleteById/{id}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult> DeleteUser(int id, CancellationToken cancellationToken){
-        try{
+    public async Task<ActionResult> DeleteUser(int id, CancellationToken cancellationToken)
+    {
+        try
+        {
             await _userService.DeleteUserByIdAsync(id, cancellationToken);
+            _logger.LogInformation("Usuario con ID {UserId} eliminado correctamente.", id);
             return NoContent();
-        }catch(Exception){
-            return NotFound();
+        }
+        catch (KeyNotFoundException ex)
+        {
+            _logger.LogWarning(ex, "Usuario con ID {UserId} no encontrado.", id);
+            return NotFound(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al eliminar el usuario con ID {UserId}.", id);
+            return StatusCode((int)HttpStatusCode.InternalServerError, "An error occurred while deleting the user.");
         }
     }
 
@@ -84,12 +105,24 @@ public class UserController : ControllerBase{
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<UserPerModel>> CreateUser([FromBody] CreateUserRequest userRequest, CancellationToken cancellationToken){
-        try{
+    public async Task<ActionResult<UserPerModel>> CreateUser([FromBody] CreateUserRequest userRequest, CancellationToken cancellationToken)
+    {
+        try
+        {
+            _logger.LogInformation("Recibida solicitud para crear usuario con Name: {Name} y Persona ObjectId: {PersonaId}", userRequest.Name, userRequest.Persona);
             var user = await _userService.CreateUserAsync(userRequest.Name, userRequest.Persona, cancellationToken);
-            return CreatedAtAction(nameof(GetUserById), new { id = user.Id}, user.ToDto());
-        }catch(Exception){
-            return StatusCode((int)HttpStatusCode.InternalServerError, "An error occurred while creating the user");
+            _logger.LogInformation("Usuario creado exitosamente con ID: {UserId}", user.Id);
+            return CreatedAtAction(nameof(GetUserById), new { id = user.Id }, user.ToDto());
+        }
+        catch (ArgumentException ex)
+        {
+            _logger.LogWarning(ex, "Solicitud inválida para crear usuario.");
+            return BadRequest(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al crear el usuario.");
+            return StatusCode((int)HttpStatusCode.InternalServerError, "An error occurred while creating the user.");
         }
     }
 
@@ -98,30 +131,51 @@ public class UserController : ControllerBase{
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> UpdateUser(int id, [FromBody] UpdateUserRequest userUpdate, CancellationToken cancellationToken){
-        try{
+    public async Task<IActionResult> UpdateUser(int id, [FromBody] UpdateUserRequest userUpdate, CancellationToken cancellationToken)
+    {
+        try
+        {
             await _userService.UpdateUserAsync(id, userUpdate.Name, userUpdate.Persona, cancellationToken);
             return NoContent();
-        }catch(Exception){
-            return NotFound();
+        }
+        catch (ArgumentException ex)
+        {
+            _logger.LogWarning(ex, "Solicitud inválida para actualizar usuario.");
+            return BadRequest(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al actualizar el usuario con ID {UserId}.", id);
+            return StatusCode((int)HttpStatusCode.InternalServerError, "An error occurred while updating the user.");
         }
     }
 
-    [HttpPatch("PatchById{id}")]
+    [HttpPatch("PatchById/{id}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> PatchUser(int id, [FromBody] PatchUserRequest patchuser, CancellationToken cancellationToken){
-        try{
-            var userupdated = await _userService.PatchUserAsync(id, patchuser, cancellationToken);
-            if(userupdated == null){
-                return NotFound();
+    public async Task<IActionResult> PatchUser(int id, [FromBody] PatchUserRequest patchUser, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var userUpdated = await _userService.PatchUserAsync(id, patchUser, cancellationToken);
+            if (userUpdated == null)
+            {
+                _logger.LogWarning("Usuario con ID {UserId} no encontrado.", id);
+                return NotFound($"Usuario con ID {id} no encontrado.");
             }
-            return Ok(userupdated.ToDto());
-        }catch (Exception ex){
-            return StatusCode((int)HttpStatusCode.InternalServerError, ex.Message);
+            return Ok(userUpdated.ToDto());
+        }
+        catch (ArgumentException ex)
+        {
+            _logger.LogWarning(ex, "Solicitud inválida para actualizar parcialmente el usuario.");
+            return BadRequest(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al actualizar parcialmente el usuario con ID {UserId}.", id);
+            return StatusCode((int)HttpStatusCode.InternalServerError, "An error occurred while partially updating the user.");
         }
     }
-
-}	
+}
