@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: personas-api
-        image: localhost:5000/personas-api:1
+        image: localhost:5000/personas-api:3
         env:
           - name: ConnectionString__DefaultConnection
             valueFrom:
