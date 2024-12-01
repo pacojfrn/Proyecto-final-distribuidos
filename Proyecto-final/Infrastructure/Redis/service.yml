@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-service
+  namespace: bagm-databases
+spec:
+  selector:
+    app: redis
+  ports:
+    - protocol: TCP
+      port: 6379  # El puerto del servicio
+      targetPort: 6379  # El puerto en el contenedor
+  type: ClusterIP  # Tipo de servicio para acceso interno en el clúster

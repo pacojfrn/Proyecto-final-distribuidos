@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: restapi
+  namespace: jfaa-api
+  labels:
+    app: restapi
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: restapi
+  template:
+    metadata:
+      labels:
+        app: restapi
+    spec:
+      initContainers:
+      - name: init-db
+        image: localhost:5000/users-api:7  # Usa la imagen de tu API
+        command: ["sh", "-c", "python API/database/db.py"]  # Ejecuta el script de inicialización de la base de datos
+        env:
+        - name: DB_URL
+          valueFrom:
+            secretKeyRef:
+              name: restapi-secret
+              key: DB_URL
+      containers:
+      - name: restapi
+        image: localhost:5000/users-api:9
+        ports:
+        - containerPort: 5000
+        env:
+        - name: DB_URL
+          valueFrom:
+            secretKeyRef:
+              name: restapi-secret
+              key: DB_URL

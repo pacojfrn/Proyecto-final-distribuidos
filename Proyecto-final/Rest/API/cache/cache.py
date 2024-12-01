@@ -1,6 +1,6 @@
 import redis
 
-redis_client = redis.StrictRedis(host = 'RestAPI_cache', port=6379, db=0)
+redis_client = redis.StrictRedis(host = 'redis-service', port=6379, db=0)
 
 def clear_product_quantity_cache():
     try:

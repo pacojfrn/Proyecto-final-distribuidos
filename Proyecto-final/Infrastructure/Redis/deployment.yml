@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  namespace: bagm-databases
+spec:
+  replicas: 1  # Puedes ajustar el número de réplicas según tus necesidades
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+        - name: redis
+          image: redis:latest  # O usa una versión específica, por ejemplo, redis:7.0.11
+          ports:
+            - containerPort: 6379  # El puerto predeterminado de Redis

@@ -1,0 +1,17 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: sql-job-2
+  namespace: bagm-databases
+spec:
+  template:
+    spec:
+      containers:
+      - name: init-db
+        image: localhost:5000/users-api:7  # Usa la imagen de tu API
+        command: ["python", "API/database/db.py"]  # Ejecuta el script de inicialización de la base de datos
+        env:
+        - name: DB_URL
+          value: "postgresql://user:password@restapi-db.bagm-databases.svc.cluster.local:5432/postgres"
+      restartPolicy: OnFailure
+  backoffLimit: 1
