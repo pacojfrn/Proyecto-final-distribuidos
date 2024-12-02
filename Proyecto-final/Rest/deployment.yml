@@ -27,7 +27,7 @@ spec:
               key: DB_URL
       containers:
       - name: restapi
-        image: localhost:5000/users-api:9
+        image: localhost:5000/users-api:71
         ports:
         - containerPort: 5000
         env:

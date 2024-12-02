@@ -1,9 +1,15 @@
 from flask import Blueprint, request, jsonify
 import json
+import logging
 from flasgger import swag_from
+from sqlalchemy.orm import make_transient
 from ..database.db import User
-from ..cache.cache import redis_client, clear_product_quantity_cache
-from ..Soap.client import verify_persona, create_persona_soap
+from ..cache.cache import redis_client
+from ..Soap.client import get_persona_by_name, create_persona, delete_persona
+
+# Configurar el logger
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.DEBUG)
 
 product_blueprint = Blueprint('users', __name__)
 
@@ -20,24 +26,14 @@ product_blueprint = Blueprint('users', __name__)
                 'type': 'object',
                 'properties': {
                     'name': {'type': 'string', 'example': 'John Doe'},
-                    'persona': {'type': 'string', 'example': 'SoapAPI User'}
+                    'persona': {'type': 'string', 'example': 'Angel'}
                 },
                 'required': ['name', 'persona']
             }
         }
     ],
     'responses': {
-        201: {
-            'description': 'User created successfully',
-            'schema': {
-                'type': 'object',
-                'properties': {
-                    'id': {'type': 'integer'},
-                    'name': {'type': 'string'},
-                    'persona': {'type': 'string'}
-                }
-            }
-        },
+        201: {'description': 'User created successfully'},
         400: {'description': 'Invalid input'}
     }
 })
@@ -49,19 +45,25 @@ def create_user():
     persona = data.get('persona')
 
     if not name or not persona:
+        logger.warning('Invalid input: Name and Persona are required.')
         return jsonify({"error": "Name and Persona are required"}), 400
 
-    # Verificar el ObjectId con la SOAP API
-    if not verify_persona(persona):
+    logger.info(f'Attempting to verify persona: {persona}')
+    if not get_persona_by_name(persona):
+        logger.warning(f'Persona {persona} not found during verification.')
         return jsonify({"error": "Persona ObjectId not found"}), 400
 
-    new_user = User(name=name, persona=persona)
-    db.session.add(new_user)
-    db.session.commit()
+    try:
+        new_user = User(name=name, persona=persona)
+        with db.session.begin():
+            db.session.add(new_user)
+            db.session.flush()  # Forzar escritura para obtener ID
+        logger.info(f'User created successfully: {new_user.id}')
+        return jsonify({"id": new_user.id, "name": name, "persona": persona}), 201
+    except Exception as e:
+        logger.error(f"Error creating user: {str(e)}")
+        return jsonify({"error": "Internal server error"}), 500
 
-    redis_client.set(f"user:{new_user.id}", json.dumps({"name": name, "persona": persona}))
-
-    return jsonify({"id": new_user.id, "name": name, "persona": persona}), 201
 
 @product_blueprint.route('/users/<int:user_id>', methods=['GET'])
 @swag_from({
@@ -77,67 +79,31 @@ def create_user():
         }
     ],
     'responses': {
-        200: {
-            'description': 'User retrieved successfully',
-            'schema': {
-                'type': 'object',
-                'properties': {
-                    'id': {'type': 'integer'},
-                    'name': {'type': 'string'},
-                    'persona': {'type': 'string'}
-                }
-            }
-        },
+        200: {'description': 'User retrieved successfully'},
         404: {'description': 'User not found'}
     }
 })
 def get_user(user_id):
     from API import db  # Importación diferida
 
+    logger.info(f'Retrieving user with ID: {user_id}')
     cached_user = redis_client.get(f"user:{user_id}")
+    
     if cached_user:
+        logger.debug(f'Cache hit for user ID {user_id}')
         return jsonify(json.loads(cached_user)), 200
 
     user = User.query.get(user_id)
+    
     if not user:
+        logger.warning(f'User with ID {user_id} not found.')
         return jsonify({"error": "User not found"}), 404
 
-    redis_client.set(f"user:{user.id}", json.dumps({"name": user.name, "persona": user.persona}))
-    return jsonify({"id": user.id, "name": user.name, "persona": user.persona}), 200
+    user_data = {"id": user.id, "name": user.name, "persona": get_persona_by_name(user.persona)}
 
-@product_blueprint.route('/users/<int:user_id>', methods=['DELETE'])
-@swag_from({
-    'tags': ['Users'],
-    'description': 'Delete a user by ID',
-    'parameters': [
-        {
-            'name': 'user_id',
-            'in': 'path',
-            'type': 'integer',
-            'required': True,
-            'description': 'The ID of the user to delete'
-        }
-    ],
-    'responses': {
-        200: {'description': 'User deleted successfully'},
-        404: {'description': 'User not found'}
-    }
-})
-def delete_user(user_id):
-    from API import db  # Importación diferida
+    logger.info(f'User with ID {user_id} retrieved successfully.')
+    return jsonify(user_data), 200
 
-    user = User.query.get(user_id)
-    if not user:
-        return jsonify({"error": "User not found"}), 404
-
-    db.session.delete(user)
-    db.session.commit()
-
-    redis_client.delete(f"user:{user_id}")
-
-    return jsonify({"message": "User deleted successfully"}), 200
-
-# Buscar usuarios por nombre con paginación
 @product_blueprint.route('/users/search', methods=['GET'])
 @swag_from({
     'tags': ['Users'],
@@ -192,31 +158,31 @@ def delete_user(user_id):
     }
 })
 def search_users():
-    from API import db  # Importación diferida
-
     name = request.args.get('name')
     page = int(request.args.get('page', 1))
     per_page = int(request.args.get('per_page', 10))
 
+    logger.info(f'Searching for users with name: {name}, page: {page}, per_page: {per_page}')
     users = User.query.filter(User.name.ilike(f"%{name}%")).paginate(page, per_page, False)
 
     if not users.items:
+        logger.warning(f'No users found for search term: {name}')
         return jsonify({"error": "No users found"}), 404
 
     result = {
         'users': [{
             'id': user.id,
             'name': user.name,
-            'persona': user.persona
+            'persona': get_persona_by_name(user.persona)
         } for user in users.items],
         'total': users.total,
         'page': page,
         'per_page': per_page
     }
 
+    logger.info(f'Successfully retrieved {len(users.items)} users.')
     return jsonify(result), 200
 
-# Actualizar todos los atributos de un usuario (PUT)
 @product_blueprint.route('/users/<int:user_id>', methods=['PUT'])
 @swag_from({
     'tags': ['Users'],
@@ -262,39 +228,23 @@ def search_users():
 def update_user(user_id):
     from API import db  # Importación diferida
 
+    data = request.get_json()
     user = User.query.get(user_id)
     if not user:
+        logger.warning(f'User with ID {user_id} not found for update.')
         return jsonify({"error": "User not found"}), 404
 
-    data = request.get_json()
-    name = data.get('name')
-    persona = data.get('persona')
-
-    if not (name or persona):
-        # Allow updating empty fields
-        pass
-    elif not name and persona:
-        # Update persona only, verify with SOAP API
-        if not verify_persona(persona):
-            return jsonify({"error": "Persona ObjectId not found"}), 400
-
-    elif name and not persona:
-        # Update name only, no SOAP verification needed
-        pass
-    else:
-        # Update both name and persona, verify persona with SOAP API
-        if not verify_persona(persona):
-            return jsonify({"error": "Persona ObjectId not found"}), 400
-
-    user.name = name or user.name  # Update name if provided, otherwise keep existing value
-    user.persona = persona or user.persona  # Update persona if provided, otherwise keep existing value
+    user.name = data.get('name', user.name)
+    user.persona = data.get('persona', user.persona)
 
     db.session.commit()
+    logger.info(f'User with ID {user.id} updated successfully.')
 
-    redis_client.set(f"user:{user.id}", json.dumps({"name": user.name, "persona": user.persona}))
-
-    return jsonify({"id": user.id, "name": user.name, "persona": user.persona}), 200
-
+    return jsonify({
+        'id': user.id,
+        'name': user.name,
+        'persona': get_persona_by_name(user.persona)
+    }), 200
 
 @product_blueprint.route('/users/soap/create', methods=['POST'])
 @swag_from({
@@ -370,7 +320,7 @@ def update_user(user_id):
         400: {'description': 'Invalid input'}
     }
 })
-def create_persona():
+def create_persona_soap():
     from API import db  # Importación diferida
     data = request.get_json()
 
@@ -388,13 +338,140 @@ def create_persona():
     strength = data.get('strength', [])
     weak = data.get('weak', [])
 
+    persona = get_persona_by_name(name)
+
+    if persona is None:
     # Llamar a la función de SOAP para crear una persona
+        try:
+            response = create_persona(name, arcana, level, stats, strength, weak)
+            if response:
+                return jsonify(response), 201
+            else:
+                return jsonify({"error": "Failed to create persona"}), 500
+        except Exception as e:
+            logger.error(f"Error al crear la persona: {e}")
+            return jsonify({"error": "An error occurred while creating the persona"}), 500
+    else:
+            logger.error(f"Persona ya existente")
+            return None
+
+@product_blueprint.route('/users/soap/delete', methods=['DELETE'])
+@swag_from({
+    'tags': ['Persona'],
+    'description': 'delete a persona by Name using the SOAP API',
+    'parameters': [
+        {
+            'name': 'persona_name',
+            'in': 'query', 
+            'required': True,
+            'schema': {
+                'type': 'string',
+                'example':  'Angel'
+            }
+        }
+    ],
+    'responses': {
+    200: {
+        'description': 'Persona deleted successfully',
+        'schema': {
+            'type': 'object',
+            'properties': {
+                'deleted': {'type': 'boolean', 'example': True}
+            }
+        }
+    },
+    404: {'description': 'Persona not found'},
+    400: {'description': 'Invalid input'},
+    500: {'description': 'An error occurred while deleting the persona'}
+}
+})
+def delete_persona_soap():
+    # Obtener el persona_id de los parámetros de consulta
+    persona_name = request.args.get('persona_name', type=str)
+
+    if not persona_name:
+        logging.warning("persona_name is missing or invalid in the request.")
+        return jsonify({"error": "persona_name is required and must be a valid integer"}), 400
+
     try:
-        response = create_persona_soap(name, arcana, level, stats, strength, weak)
-        if response:
-            return jsonify(response), 201
+        # Llamar a la función del cliente SOAP para obtener la persona por ID
+        success = delete_persona(persona_name)  # Asegúrate de que esta función esté correctamente implementada e importada
+
+        if success:
+            return jsonify({'deleted': True}), 200
         else:
-            return jsonify({"error": "Failed to create persona"}), 500
+            return jsonify({'deleted': False}), 404
     except Exception as e:
-        logger.error(f"Error al crear la persona: {e}")
-        return jsonify({"error": "An error occurred while creating the persona"}), 500
+        logging.error(f"Error occurred while deleting persona with Name {persona_name}: {e}")
+        return jsonify({'error': 'An error occurred while deleting the persona'}), 500
+
+@product_blueprint.route('/users/soap/get', methods=['GET'])
+@swag_from({
+    'tags': ['Persona'],
+    'description': 'Retrieve a persona by name using the SOAP API',
+    'parameters': [
+        {
+            'name': 'persona_name',
+            'in': 'query',  # Cambiar a 'query' en lugar de 'body'
+            'required': True,
+            'schema': {
+                'type': 'string',
+                'example':  'Angel'
+            }
+        }
+    ],
+    'responses': {
+        200: {
+            'description': 'Persona retrieved successfully',
+            'schema': {
+                'type': 'object',
+                'properties': {
+                    'name': {'type': 'string'},
+                    'arcana': {'type': 'string'},
+                    'level': {'type': 'integer'},
+                    'stats': {
+                        'type': 'object',
+                        'properties': {
+                            'St': {'type': 'integer'},
+                            'Ma': {'type': 'integer'},
+                            'En': {'type': 'integer'},
+                            'Ag': {'type': 'integer'},
+                            'Lu': {'type': 'integer'}
+                        }
+                    },
+                    'strength': {
+                        'type': 'array',
+                        'items': {'type': 'string'}
+                    },
+                    'weak': {
+                        'type': 'array',
+                        'items': {'type': 'string'}
+                    }
+                }
+            }
+        },
+        404: {'description': 'Persona not found'},
+        400: {'description': 'Invalid input'},
+        500: {'description': 'An error occurred while retrieving the persona'}
+    }
+})
+def get_persona():
+    # Obtener el persona_id de los parámetros de consulta
+    persona_name = request.args.get('persona_name', type=str)
+
+    if not persona_name:
+        logging.warning("persona_name is missing or invalid in the request.")
+        return jsonify({"error": "persona_name is required and must be a valid integer"}), 400
+
+    try:
+        persona = get_persona_by_name(persona_name)
+
+        if persona:
+            logging.info(f"Persona with Name {persona_name} retrieved successfully.")
+            return jsonify(persona), 200
+        else:
+            logging.info(f"Persona with Name {persona_name} not found.")
+            return jsonify({"error": "Persona not found"}), 404
+    except Exception as e:
+        logging.error(f"Error occurred while retrieving persona with Name {persona_name}: {e}")
+        return jsonify({"error": "An error occurred while retrieving the persona"}), 500
