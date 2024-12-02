@@ -61,8 +61,8 @@ kubectl create namespace bagm-databases
 Lo que creará dos ***namespaces*** en donde se alojarán tanto las APIs como las bases de datos
 
 Pasando esto, necesitarás levantar tanto las APIs como las bases de datos en sus respectivos ***pods*** para poder usarlas después
->A partir de aquí, vas a necesitar tener muchas terminales abiertas
->No cierres ninguna después de ejecutar los comandos
+>A partir de aquí, vas a necesitar tener muchas terminales abiertas. 
+>No cierres ninguna después de ejecutar los comandos, podrás hacerlo más tarde
 
 Primero, ejecuta:
 ```
@@ -114,6 +114,9 @@ Los pods corriendo deberían verse así:
 ![Pods](/assets/pods.png)
 
 Y con todo esto, las APIs y las bases de datos ya están levantadas en Kubernetes.
+
+>Antes de continuar, termina los procesos de las terminales que están ejecutando ``kubectl port-forward --namespace kube-system service/registry 5000:80`` y  ``docker run --rm -it --network=host alpine ash -c "apk add socat && socat TCP-LISTEN:5000,reuseaddr,fork TCP:host.docker.internal:5000"``
+
 Solo necesitas abrir una terminal más y ejecutar:
 ```
 minikube tunnel
