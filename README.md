@@ -105,6 +105,12 @@ kubectl apply -f service.yml
 Ahora (en otra terminal), navega hacia la carpeta raíz de RestAPI *(/Proyecto-final/Rest)*
 y ejecuta:
 ```
+kubectl apply -f secrets.yml
+kubectl apply -f service.yml
+kubectl apply -f deployment.yml
+```
+Y luego:
+```
 docker build -t localhost:5000/users-api:1 .
 docker push localhost:5000/personas-api:1
 ```
