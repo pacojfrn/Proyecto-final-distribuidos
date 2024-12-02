@@ -17,7 +17,7 @@ spec:
     spec:
       initContainers:
       - name: init-db
-        image: localhost:5000/users-api:7  # Usa la imagen de tu API
+        image: localhost:5000/users-api:1  # Usa la imagen de tu API
         command: ["sh", "-c", "python API/database/db.py"]  # Ejecuta el script de inicialización de la base de datos
         env:
         - name: DB_URL
@@ -27,7 +27,7 @@ spec:
               key: DB_URL
       containers:
       - name: restapi
-        image: localhost:5000/users-api:71
+        image: localhost:5000/users-api:1
         ports:
         - containerPort: 5000
         env:
