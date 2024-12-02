@@ -166,10 +166,6 @@ Esto detendrá las acciones de los pods y apagará el clúster de kubernetes.
   ![CreateUser](/assets/Post-Users.png)
   ![CreateUser](/assets/Post-Users1.png)
 
-- Actualizar algún usuario
-
-  ![UpdateUser](/assets/Put-Users.png)
-  ![UpdateUser](/assets/Put-Users1.png)
 
 **Endpoints (Soap)**
 
