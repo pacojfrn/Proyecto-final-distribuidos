@@ -96,6 +96,8 @@ Después, cambia a la carpeta de MySQL *(/Infrastructure/MySQL)* y ejecuta:
 kubectl apply -f service.yml
 kubectl apply -f deployment.yml
 kubectl apply -f storage.yml
+kubectl apply -f job.yml
+kubectl apply -f postgres-pvc.yml
 ```
 Luego, en una terminal diferente, navega a la carpeta raíz de Redis *(/Infrastructure/Redis)* y ejecuta:
 ```
