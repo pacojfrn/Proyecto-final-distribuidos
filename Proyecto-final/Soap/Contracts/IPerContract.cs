@@ -13,7 +13,7 @@ public interface IPerContract{
     [OperationContract]
     public Task<PerResponseDto> GetByName(string name, CancellationToken cancellationToken);
     [OperationContract]
-    public Task<bool> DeleteById(string id, CancellationToken cancellationToken);
+    public Task<bool> DeleteByName(string name, CancellationToken cancellationToken);
     [OperationContract]
     public Task<IList<PerResponseDto>> GetByArcana(string arcana, CancellationToken cancellationToken);
     [OperationContract]

@@ -42,8 +42,8 @@ public class PerService : IPerContract{
         }
         throw new FaultException("Persona not found");
     }
-    public async Task<bool> DeleteById(string id, CancellationToken cancellationToken){
-        var delete = await _perRepository.DeleteByIdAsync(id, cancellationToken);
+    public async Task<bool> DeleteByName(string name, CancellationToken cancellationToken){
+        var delete = await _perRepository.DeleteByNameAsync(name, cancellationToken);
         if (delete){
             return true;
         }

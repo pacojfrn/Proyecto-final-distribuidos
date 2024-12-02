@@ -6,8 +6,8 @@ using SoapCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-
-builder.Services.AddSingleton<IMongoClient, MongoClient>(s => new MongoClient(builder.Configuration.GetValue<string>("MongoDb:Persona:ConnectionString")));
+string connectionString = Environment.GetEnvironmentVariable("ConnectionString__DefaultConnection");
+builder.Services.AddSingleton<IMongoClient, MongoClient>(s => new MongoClient(connectionString));
 
 // Registra repositorios y servicios
 builder.Services.AddScoped<IPerRepository, PerRepository>();

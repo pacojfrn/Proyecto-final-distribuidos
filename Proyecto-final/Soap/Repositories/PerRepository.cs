@@ -39,15 +39,19 @@ namespace Soap.Repositories
             return await _personas.Find(p => p.name == name).FirstOrDefaultAsync(cancellationToken);
         }
 
-        public async Task<bool> DeleteByIdAsync(string id, CancellationToken cancellationToken)
+        public async Task<bool> DeleteByNameAsync(string name, CancellationToken cancellationToken)
         {
-            if (!ObjectId.TryParse(id, out var objectId))
+            if (string.IsNullOrEmpty(name))
             {
-                throw new ArgumentException("Invalid ID format", nameof(id));
+                throw new ArgumentException("Name cannot be null or empty", nameof(name));
             }
 
-            var result = await _personas.DeleteOneAsync(p => p.id == objectId, cancellationToken);
-            return result.DeletedCount > 0;
+            var registro = GetByNameAsync(name, cancellationToken);
+            if (registro is not null){
+                await _personas.DeleteOneAsync(p => p.name == name, cancellationToken);
+                return true;
+            }
+            return false;
         }
 
         public async Task<PerEntity> CreatePersonaAsync(PerEntity persona, CancellationToken cancellationToken){
