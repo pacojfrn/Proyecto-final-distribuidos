@@ -8,7 +8,7 @@ spec:
     spec:
       containers:
       - name: init-db
-        image: localhost:5000/users-api:7  # Usa la imagen de tu API
+        image: localhost:5000/users-api:1  # Usa la imagen de tu API
         command: ["python", "API/database/db.py"]  # Ejecuta el script de inicialización de la base de datos
         env:
         - name: DB_URL
