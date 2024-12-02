@@ -44,7 +44,7 @@ https://github.com/pacojfrn/Proyecto-final-distribuidos.git
 2.- Construir el clúster virtual
 Abre una terminal y ejecuta:
 ```
-minikube start --insecure-registry "10.0.0.0/24" --driver=Docker
+minikube start --insecure-registry "10.0.0.0/24" --driver=docker
 ```
 Esto creará un clúster de Kubernetes dentro de Docker
 
@@ -108,6 +108,11 @@ y ejecuta:
 docker build -t localhost:5000/users-api:1 .
 docker push localhost:5000/personas-api:1
 ```
+
+Los pods corriendo deberían verse así:
+
+![Pods](/assets/pods.png)
+
 Y con todo esto, las APIs y las bases de datos ya están levantadas en Kubernetes.
 Solo necesitas abrir una terminal más y ejecutar:
 ```
