@@ -48,7 +48,7 @@ minikube start --insecure-registry "10.0.0.0/24" --driver=docker
 ```
 Esto creará un clúster de Kubernetes dentro de Docker
 
-Después, necesitarás habilitar ***registry*** para el correcto funcionamiento de las APIs
+Después, necesitarás habilitar ***registry*** para el correcto funcionamiento de las APIs.
 Para hacerlo, ejecuta lo siguiente:
 ```
 minikube addons enable registry
