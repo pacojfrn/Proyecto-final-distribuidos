@@ -112,7 +112,7 @@ kubectl apply -f deployment.yml
 Y luego:
 ```
 docker build -t localhost:5000/users-api:1 .
-docker push localhost:5000/personas-api:1
+docker push localhost:5000/users-api:1
 ```
 
 Los pods corriendo deberían verse así:
