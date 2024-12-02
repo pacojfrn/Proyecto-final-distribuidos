@@ -6,10 +6,15 @@ using SoapCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-string connectionString = Environment.GetEnvironmentVariable("ConnectionString__DefaultConnection");
+var connectionString = builder.Configuration.GetValue<string>("ConnectionString__DefaultConnection") 
+                     ?? Environment.GetEnvironmentVariable("ConnectionString__DefaultConnection");
+
+if (string.IsNullOrEmpty(connectionString))
+{
+    throw new InvalidOperationException("Connection string is not configured.");
+}
 builder.Services.AddSingleton<IMongoClient, MongoClient>(s => new MongoClient(connectionString));
 
-// Registra repositorios y servicios
 builder.Services.AddScoped<IPerRepository, PerRepository>();
 builder.Services.AddScoped<IPerContract, PerService>();
 
