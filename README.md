@@ -1,5 +1,4 @@
-# APIs + Kubernetes = Funcionalidad
-
+# PersonAPI
 **Descripción**
 
 Este proyecto usa dos APIs diseñadas para la creación y manejo de usuarios y sus personas.  (Si, como las de los videojuegos de Persona).<br></br> Consiste en una RestAPI que maneja la creación de usuarios y las comunicaciones con una SoapAPI, que a su vez se encarga de la creación de las personas con sus atributos correspondientes.
