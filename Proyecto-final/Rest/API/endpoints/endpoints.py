@@ -183,69 +183,6 @@ def search_users():
     logger.info(f'Successfully retrieved {len(users.items)} users.')
     return jsonify(result), 200
 
-@product_blueprint.route('/users/<int:user_id>', methods=['PUT'])
-@swag_from({
-    'tags': ['Users'],
-    'description': 'Update all attributes of a user',
-    'parameters': [
-        {
-            'name': 'user_id',
-            'in': 'path',
-            'type': 'integer',
-            'required': True,
-            'description': 'The ID of the user to update'
-        },
-        {
-            'name': 'body',
-            'in': 'body',
-            'required': True,
-            'schema': {
-                'type': 'object',
-                'properties': {
-                    'name': {'type': 'string', 'example': 'John Doe'},
-                    'persona': {'type': 'string', 'example': 'SoapAPI User'}
-                },
-                'required': ['name', 'persona']
-            }
-        }
-    ],
-    'responses': {
-        200: {
-            'description': 'User updated successfully',
-            'schema': {
-                'type': 'object',
-                'properties': {
-                    'id': {'type': 'integer'},
-                    'name': {'type': 'string'},
-                    'persona': {'type': 'string'}
-                }
-            }
-        },
-        400: {'description': 'Invalid input'},
-        404: {'description': 'User not found'}
-    }
-})
-def update_user(user_id):
-    from API import db  # Importación diferida
-
-    data = request.get_json()
-    user = User.query.get(user_id)
-    if not user:
-        logger.warning(f'User with ID {user_id} not found for update.')
-        return jsonify({"error": "User not found"}), 404
-
-    user.name = data.get('name', user.name)
-    user.persona = data.get('persona', user.persona)
-
-    db.session.commit()
-    logger.info(f'User with ID {user.id} updated successfully.')
-
-    return jsonify({
-        'id': user.id,
-        'name': user.name,
-        'persona': get_persona_by_name(user.persona)
-    }), 200
-
 @product_blueprint.route('/users/soap/create', methods=['POST'])
 @swag_from({
     'tags': ['Persona'],
